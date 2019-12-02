@@ -1,0 +1,11 @@
+menu "esp-baresip configuration"
+
+config BARESIPTHREAD_STACKSIZE
+    int "Stacksize of baresip thread"
+    range 0 16384
+    default 4096
+    help
+        Stacksize of baresip thread
+
+endmenu
+
