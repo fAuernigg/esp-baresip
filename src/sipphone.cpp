@@ -1,8 +1,6 @@
 #define TAG "sipphone"
 
-
 #include "sipphone.h"
-
 #ifdef ENABLE_baresip
 
 #ifndef UA_DISPLAY_NAME
@@ -22,6 +20,7 @@ typedef uint32_t u32_t;
 
 //#include <net/if.h>
 #include <re.h>
+#include <re_conf.h>
 #include <baresip.h>
 
 
@@ -119,6 +118,7 @@ void baresip_main(void* arg)
 	return;
 }
 
+int conf_set(struct conf *conf, const char *name, const char *value);
 
 int extern_baresip_config(struct conf *conf)
 {
@@ -258,7 +258,8 @@ char* gai_strerror(int e) {
 }
 
 // TODO: use correct function instead of dummy impl
-int net_rt_list(net_rt_h *rth, void *arg) {
+int net_rt_list(net_rt_h *rth, void *arg)
+{
 	struct sa dst;
 	struct sa gw;
 
@@ -375,55 +376,64 @@ static int mbuf_print_handler(const char *p, size_t size, void *arg)
 
 
 
-void sipHandleCommand(PubSubClient* mqttClient, String mqtt_id, String msg)
+void sipHandleCommand(TypeCmdResponse cbCmdResponse, const char *deviceId, const char *msg)
 {
-	cJSON *root = cJSON_Parse(msg.c_str());
+	cJSON *root = cJSON_Parse(msg);
 	if (!root) {
-		ESP_LOGE(TAG, "failed to decode baresip json received: %s", msg.c_str());
+		ESP_LOGE(TAG, "failed to decode baresip json received: %s", msg);
 		return;
 	}
 
-	String oe_cmd, oe_prm, oe_tok;
-	oe_cmd = String(cJSON_GetObjectItem(root,"command")->valuestring);
-	oe_prm = String(cJSON_GetObjectItem(root,"params")->valuestring);
-	oe_tok = String(cJSON_GetObjectItem(root,"token")->valuestring);
+	char *oe_cmd, *oe_prm, *oe_tok;
+	oe_cmd = cJSON_GetObjectItem(root,"command")->valuestring;
+	oe_prm = cJSON_GetObjectItem(root,"params")->valuestring;
+	oe_tok = cJSON_GetObjectItem(root,"token")->valuestring;
+	char baresipCmd[512];
 
 	if (!oe_cmd || !oe_prm || !oe_tok
-		|| oe_cmd.length()==0) {
-		ESP_LOGE(TAG, "failed to decode baresip command: %s", msg.c_str());
+		|| strlen(oe_cmd)==0) {
+		ESP_LOGE(TAG, "failed to decode baresip command: %s", msg);
 		cJSON_Delete(root);
 		return;
 	}
 
-	if (oe_prm.length()>0)
-		oe_cmd += " " + oe_prm;
-	ESP_LOGI(TAG, "handle baresip command: %s", oe_cmd.c_str());
+	if (oe_prm && strlen(oe_prm)>0)
+		snprintf(baresipCmd, sizeof(baresipCmd), "%s %s", oe_cmd, oe_prm);
+	else
+		snprintf(baresipCmd, sizeof(baresipCmd), "%s", oe_cmd);
+
+	ESP_LOGI(TAG, "handle baresip command: %s", oe_cmd);
 
 	int err=0;
 	struct mbuf *resp = mbuf_alloc(1024);
 	struct re_printf pf = {mbuf_print_handler, resp};
 	// Relay message to long commands
 	err = cmd_process_long(baresip_commands(),
-					oe_cmd.c_str(),
-					oe_cmd.length(),
+					baresipCmd,
+					strlen(baresipCmd),
 					&pf, NULL);
 	if (err) {
 		ESP_LOGE(TAG, "failed to process baresip command (cmd_process_long) (%d)\n", err);
 	}
 
-	String resp_topic = mqtt_id + "/baresip/command_resp/";
-	if (oe_tok.length()>0)
-		resp_topic += oe_tok;
-	else
-		resp_topic +=  "nil";
+	char resp_topic[256];
+	if (!oe_tok || strlen(oe_tok)<0)
+		oe_tok = "nil";
 
-	String resp_msg;
-	for (int i = 0; i < resp->end; i++)
-		resp_msg += (char)(resp->buf[i]);
+	snprintf(resp_topic, sizeof(resp_topic), "%s/baresip/command_resp/%s",
+			deviceId, oe_tok);
 
-	if (!mqttClient->publish(resp_topic.c_str(), resp_msg.c_str())) {
-		ESP_LOGE(TAG, "failed to publish baresip command response (%d)\n", err);
+	char *respMsg = (char*) malloc(resp->end+1);
+	if (respMsg) {
+		memcpy(respMsg, resp->buf, resp->end);
+		respMsg[resp->end]=0;
 	}
+
+	if (cbCmdResponse)
+		cbCmdResponse(resp_topic, respMsg);
+
+	if (respMsg)
+		free(respMsg);
 
 	if (resp)
 		mem_deref(resp);
@@ -448,7 +458,7 @@ int sipPhoneInit(TypeGetNetworkAddress cbGetNetworkAddress)
 	return true;
 }
 
-void sipHandleCommand(PubSubClient* mqttClient, String mqtt_id, String msg) {
+void sipHandleCommand(TypeCmdResponse cbCmdResponse, const char *deviceId, const char *msg) {
 
 }
 
