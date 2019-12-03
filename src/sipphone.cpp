@@ -1,6 +1,7 @@
 #define TAG "sipphone"
 
 #include "sipphone.h"
+
 #ifdef ENABLE_baresip
 
 #ifndef UA_DISPLAY_NAME
@@ -12,15 +13,17 @@
 #endif
 
 typedef uint32_t u32_t;
+
 #include "cJSON.h"
 #include "esp_log.h"
 
-#define VERSION"v0.5"
-//#include "version.h"
+#define ESP_BARESIP_VERSION "v0.5"
 
-//#include <net/if.h>
+#ifndef size_t
+
+#endif
+
 #include <re.h>
-#include <re_conf.h>
 #include <baresip.h>
 
 
@@ -118,8 +121,6 @@ void baresip_main(void* arg)
 	return;
 }
 
-int conf_set(struct conf *conf, const char *name, const char *value);
-
 int extern_baresip_config(struct conf *conf)
 {
 	conf_set(conf, "sip_listen", "0.0.0.0:5060");
@@ -190,7 +191,7 @@ int sipPhoneInit(TypeGetNetworkAddress cbGetNetworkAddress)
 	}
 
 	 strcpy(versionBuffer, "baresip esp32 ");
-	 strcat(versionBuffer, VERSION);
+	 strcat(versionBuffer, ESP_BARESIP_VERSION);
 
 	ESP_LOGI(TAG, "Using this as baresip version string: %s", versionBuffer);
 
