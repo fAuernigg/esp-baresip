@@ -1,0 +1,6 @@
+[submodule "components/re/re"]
+	path = components/re/re
+	url = https://github.com/creytiv/re.git
+[submodule "components/rem/rem"]
+	path = components/rem/rem
+	url = https://github.com/creytiv/rem.git
