@@ -1,0 +1,26 @@
+From ec4d167ba0f67e2afd1f86f8125bb9ae52709536 Mon Sep 17 00:00:00 2001
+From: Christian Spielberger <c.spielberger@commend.com>
+Date: Wed, 6 Nov 2019 21:59:31 +0100
+Subject: [PATCH 3/6] re_types: remove re-declaration of ssize_t
+
+---
+ include/re_types.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/include/re_types.h b/include/re_types.h
+index 8acb90c..3299f7f 100644
+--- a/include/re_types.h
++++ b/include/re_types.h
+@@ -48,7 +48,8 @@ typedef unsigned long long int    uint64_t;
+ 
+ #endif /* __int8_t_defined */
+ #ifndef __ssize_t_defined
+-typedef long     ssize_t;
++// TODO: the MACRO trick does not work in esp-idf
++//typedef long     ssize_t;
+ #define __ssize_t_defined
+ #endif
+ 
+-- 
+2.7.4
+

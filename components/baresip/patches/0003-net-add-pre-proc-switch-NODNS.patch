@@ -1,0 +1,30 @@
+From 2b688a6420cc22e265994bdf68a952d3dad5b58e Mon Sep 17 00:00:00 2001
+From: Christian Spielberger <c.spielberger@commend.com>
+Date: Mon, 16 Sep 2019 13:49:21 +0200
+Subject: [PATCH 3/3] net: add pre proc switch NODNS
+
+---
+ src/net.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/net.c b/src/net.c
+index 60dcc26..195a6c8 100644
+--- a/src/net.c
++++ b/src/net.c
+@@ -355,11 +355,13 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
+ 	}
+ 
+ 	/* Initialise DNS resolver */
++#ifndef NODNS
+ 	err = dns_init(net);
+ 	if (err) {
+ 		warning("net: dns_init: %m\n", err);
+ 		goto out;
+ 	}
++#endif
+ 
+ 	sa_init(&net->laddr, AF_INET);
+ 
+-- 
+2.7.4
+

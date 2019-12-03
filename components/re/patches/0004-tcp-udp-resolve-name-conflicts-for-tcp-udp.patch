@@ -1,0 +1,311 @@
+From 9f5db41a567d51a70b9a4594208455457373babd Mon Sep 17 00:00:00 2001
+From: Christian Spielberger <c.spielberger@commend.com>
+Date: Sun, 15 Sep 2019 10:27:40 +0200
+Subject: [PATCH 4/6] tcp,udp: resolve name conflicts for tcp/udp
+
+There where conflicts in esp-idf for
+ tcp_accept, tcp_connect, udp_connect, udp_send.
+---
+ include/re_tcp.h          | 4 ++--
+ include/re_udp.h          | 4 ++--
+ src/bfcp/conn.c           | 2 +-
+ src/dns/client.c          | 4 ++--
+ src/http/client.c         | 2 +-
+ src/http/server.c         | 2 +-
+ src/natbd/hairpinning.c   | 2 +-
+ src/rtp/rtp.c             | 4 ++--
+ src/sip/transp.c          | 6 +++---
+ src/stun/ctrans.c         | 4 ++--
+ src/stun/stun.c           | 2 +-
+ src/tcp/tcp.c             | 2 +-
+ src/tcp/tcp_high.c        | 2 +-
+ src/tls/openssl/tls_udp.c | 4 ++--
+ src/turn/turnc.c          | 2 +-
+ src/udp/udp.c             | 4 ++--
+ 16 files changed, 25 insertions(+), 25 deletions(-)
+
+diff --git a/include/re_tcp.h b/include/re_tcp.h
+index 98dba71..1e4aa8d 100644
+--- a/include/re_tcp.h
++++ b/include/re_tcp.h
+@@ -52,7 +52,7 @@ int  tcp_sock_alloc(struct tcp_sock **tsp, const struct sa *local,
+ 		    tcp_conn_h *ch, void *arg);
+ int  tcp_sock_bind(struct tcp_sock *ts, const struct sa *local);
+ int  tcp_sock_listen(struct tcp_sock *ts, int backlog);
+-int  tcp_accept(struct tcp_conn **tcp, struct tcp_sock *ts, tcp_estab_h *eh,
++int  re_tcp_accept(struct tcp_conn **tcp, struct tcp_sock *ts, tcp_estab_h *eh,
+ 		tcp_recv_h *rh, tcp_close_h *ch, void *arg);
+ void tcp_reject(struct tcp_sock *ts);
+ int  tcp_sock_local_get(const struct tcp_sock *ts, struct sa *local);
+@@ -79,7 +79,7 @@ size_t tcp_conn_txqsz(const struct tcp_conn *tc);
+ /* High-level API */
+ int  tcp_listen(struct tcp_sock **tsp, const struct sa *local,
+ 		tcp_conn_h *ch, void *arg);
+-int  tcp_connect(struct tcp_conn **tcp, const struct sa *peer,
++int  re_tcp_connect(struct tcp_conn **tcp, const struct sa *peer,
+ 		 tcp_estab_h *eh, tcp_recv_h *rh, tcp_close_h *ch, void *arg);
+ int  tcp_local_get(const struct tcp_sock *ts, struct sa *local);
+ 
+diff --git a/include/re_udp.h b/include/re_udp.h
+index f744f2f..9b03041 100644
+--- a/include/re_udp.h
++++ b/include/re_udp.h
+@@ -22,8 +22,8 @@ typedef void (udp_error_h)(int err, void *arg);
+ 
+ int  udp_listen(struct udp_sock **usp, const struct sa *local,
+ 		udp_recv_h *rh, void *arg);
+-int  udp_connect(struct udp_sock *us, const struct sa *peer);
+-int  udp_send(struct udp_sock *us, const struct sa *dst, struct mbuf *mb);
++int  re_udp_connect(struct udp_sock *us, const struct sa *peer);
++int  re_udp_send(struct udp_sock *us, const struct sa *dst, struct mbuf *mb);
+ int  udp_send_anon(const struct sa *dst, struct mbuf *mb);
+ int  udp_local_get(const struct udp_sock *us, struct sa *local);
+ int  udp_setsockopt(struct udp_sock *us, int level, int optname,
+diff --git a/src/bfcp/conn.c b/src/bfcp/conn.c
+index 6e4051d..0625526 100644
+--- a/src/bfcp/conn.c
++++ b/src/bfcp/conn.c
+@@ -142,7 +142,7 @@ int bfcp_send(struct bfcp_conn *bc, const struct sa *dst, struct mbuf *mb)
+ 	switch (bc->tp) {
+ 
+ 	case BFCP_UDP:
+-		return udp_send(bc->us, dst, mb);
++		return re_udp_send(bc->us, dst, mb);
+ 
+ 	default:
+ 		return ENOSYS;
+diff --git a/src/dns/client.c b/src/dns/client.c
+index 9535e07..f12b5e3 100644
+--- a/src/dns/client.c
++++ b/src/dns/client.c
+@@ -494,7 +494,7 @@ static int tcpconn_alloc(struct tcpconn **tcpp, struct dnsc *dnsc,
+ 	if (!tc->mb)
+ 		goto out;
+ 
+-	err = tcp_connect(&tc->conn, srv, tcp_estab_handler,
++	err = re_tcp_connect(&tc->conn, srv, tcp_estab_handler,
+ 			  tcp_recv_handler, tcp_close_handler, tc);
+ 	if (err)
+ 		goto out;
+@@ -583,7 +583,7 @@ static int send_udp(struct dns_query *q)
+ 		DEBUG_INFO("trying udp server#%u: %J\n", i, srv);
+ 
+ 		q->mb.pos = 0;
+-		err = udp_send(q->dnsc->us, srv, &q->mb);
++		err = re_udp_send(q->dnsc->us, srv, &q->mb);
+ 		if (!err)
+ 			break;
+ 	}
+diff --git a/src/http/client.c b/src/http/client.c
+index 39afa39..c317476 100644
+--- a/src/http/client.c
++++ b/src/http/client.c
+@@ -431,7 +431,7 @@ static int conn_connect(struct http_req *req)
+ 	conn->addr = *addr;
+ 	conn->usec = 1;
+ 
+-	err = tcp_connect(&conn->tc, addr, estab_handler, recv_handler,
++	err = re_tcp_connect(&conn->tc, addr, estab_handler, recv_handler,
+ 			  close_handler, conn);
+ 	if (err)
+ 		goto out;
+diff --git a/src/http/server.c b/src/http/server.c
+index ff04770..d95cefa 100644
+--- a/src/http/server.c
++++ b/src/http/server.c
+@@ -218,7 +218,7 @@ static void connect_handler(const struct sa *peer, void *arg)
+ 	conn->peer = *peer;
+ 	conn->sock = sock;
+ 
+-	err = tcp_accept(&conn->tc, sock->ts, NULL, recv_handler,
++	err = re_tcp_accept(&conn->tc, sock->ts, NULL, recv_handler,
+ 			 close_handler, conn);
+ 	if (err)
+ 		goto out;
+diff --git a/src/natbd/hairpinning.c b/src/natbd/hairpinning.c
+index 396d50e..0883268 100644
+--- a/src/natbd/hairpinning.c
++++ b/src/natbd/hairpinning.c
+@@ -198,7 +198,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
+ 
+ 	(void)peer;
+ 
+-	err = tcp_accept(&nh->tc2, nh->ts, NULL, tcp_recv_handler2,
++	err = re_tcp_accept(&nh->tc2, nh->ts, NULL, tcp_recv_handler2,
+ 			 tcp_close_handler2, nh);
+ 	if (err) {
+ 		DEBUG_WARNING("TCP conn: tcp_accept: %m\n", err);
+diff --git a/src/rtp/rtp.c b/src/rtp/rtp.c
+index 066199d..3756358 100644
+--- a/src/rtp/rtp.c
++++ b/src/rtp/rtp.c
+@@ -452,7 +452,7 @@ int rtp_send(struct rtp_sock *rs, const struct sa *dst, bool ext,
+ 
+ 	mb->pos = pos;
+ 
+-	return udp_send(rs->sock_rtp, dst, mb);
++	return re_udp_send(rs->sock_rtp, dst, mb);
+ }
+ 
+ 
+@@ -569,7 +569,7 @@ int rtcp_send(struct rtp_sock *rs, struct mbuf *mb)
+ 	if (!rs || !rs->sock_rtcp || !sa_isset(&rs->rtcp_peer, SA_ALL))
+ 		return EINVAL;
+ 
+-	return udp_send(rs->rtcp_mux ? rs->sock_rtp : rs->sock_rtcp,
++	return re_udp_send(rs->rtcp_mux ? rs->sock_rtp : rs->sock_rtcp,
+ 			&rs->rtcp_peer, mb);
+ }
+ 
+diff --git a/src/sip/transp.c b/src/sip/transp.c
+index aed33bb..5711cbe 100644
+--- a/src/sip/transp.c
++++ b/src/sip/transp.c
+@@ -514,7 +514,7 @@ static void tcp_connect_handler(const struct sa *paddr, void *arg)
+ 	conn->paddr = *paddr;
+ 	conn->sip   = transp->sip;
+ 
+-	err = tcp_accept(&conn->tc, transp->sock, tcp_estab_handler,
++	err = re_tcp_accept(&conn->tc, transp->sock, tcp_estab_handler,
+ 			 tcp_recv_handler, tcp_close_handler, conn);
+ 	if (err)
+ 		goto out;
+@@ -566,7 +566,7 @@ static int conn_send(struct sip_connqent **qentp, struct sip *sip, bool secure,
+ 	conn->paddr = *dst;
+ 	conn->sip   = sip;
+ 
+-	err = tcp_connect(&conn->tc, dst, tcp_estab_handler, tcp_recv_handler,
++	err = re_tcp_connect(&conn->tc, dst, tcp_estab_handler, tcp_recv_handler,
+ 			  tcp_close_handler, conn);
+ 	if (err)
+ 		goto out;
+@@ -739,7 +739,7 @@ int sip_transp_send(struct sip_connqent **qentp, struct sip *sip, void *sock,
+ 			sock = transp->sock;
+ 		}
+ 
+-		err = udp_send(sock, dst, mb);
++		err = re_udp_send(sock, dst, mb);
+ 		break;
+ 
+ 	case SIP_TRANSP_TLS:
+diff --git a/src/stun/ctrans.c b/src/stun/ctrans.c
+index e164b9d..bb6e0a9 100644
+--- a/src/stun/ctrans.c
++++ b/src/stun/ctrans.c
+@@ -279,7 +279,7 @@ int stun_ctrans_request(struct stun_ctrans **ctp, struct stun *stun, int proto,
+ 		}
+ 
+ 		ct->txc = 1;
+-		err = udp_send(ct->sock, dst, mb);
++		err = re_udp_send(ct->sock, dst, mb);
+ 		break;
+ 
+ 	case IPPROTO_TCP:
+@@ -290,7 +290,7 @@ int stun_ctrans_request(struct stun_ctrans **ctp, struct stun *stun, int proto,
+ 			break;
+ 		}
+ 
+-		err = tcp_connect((struct tcp_conn **)&ct->sock, dst,
++		err = re_tcp_connect((struct tcp_conn **)&ct->sock, dst,
+ 				  tcp_estab_handler, tcp_recv_handler,
+ 				  tcp_close_handler, ct);
+ 		break;
+diff --git a/src/stun/stun.c b/src/stun/stun.c
+index 6dfdd97..cdf0085 100644
+--- a/src/stun/stun.c
++++ b/src/stun/stun.c
+@@ -103,7 +103,7 @@ int stun_send(int proto, void *sock, const struct sa *dst, struct mbuf *mb)
+ 	switch (proto) {
+ 
+ 	case IPPROTO_UDP:
+-		err = udp_send(sock, dst, mb);
++		err = re_udp_send(sock, dst, mb);
+ 		break;
+ 
+ 	case IPPROTO_TCP:
+diff --git a/src/tcp/tcp.c b/src/tcp/tcp.c
+index 665ba7f..0e48f64 100644
+--- a/src/tcp/tcp.c
++++ b/src/tcp/tcp.c
+@@ -755,7 +755,7 @@ int tcp_sock_listen(struct tcp_sock *ts, int backlog)
+  *
+  * @return 0 if success, otherwise errorcode
+  */
+-int tcp_accept(struct tcp_conn **tcp, struct tcp_sock *ts, tcp_estab_h *eh,
++int re_tcp_accept(struct tcp_conn **tcp, struct tcp_sock *ts, tcp_estab_h *eh,
+ 	       tcp_recv_h *rh, tcp_close_h *ch, void *arg)
+ {
+ 	struct tcp_conn *tc;
+diff --git a/src/tcp/tcp_high.c b/src/tcp/tcp_high.c
+index 7dd9d48..855c9dd 100644
+--- a/src/tcp/tcp_high.c
++++ b/src/tcp/tcp_high.c
+@@ -62,7 +62,7 @@ int tcp_listen(struct tcp_sock **tsp, const struct sa *local,
+  *
+  * @return 0 if success, otherwise errorcode
+  */
+-int tcp_connect(struct tcp_conn **tcp, const struct sa *peer,
++int re_tcp_connect(struct tcp_conn **tcp, const struct sa *peer,
+ 		tcp_estab_h *eh, tcp_recv_h *rh, tcp_close_h *ch, void *arg)
+ {
+ 	struct tcp_conn *tc = NULL;
+diff --git a/src/tls/openssl/tls_udp.c b/src/tls/openssl/tls_udp.c
+index 4ec81a3..0fe0f02 100644
+--- a/src/tls/openssl/tls_udp.c
++++ b/src/tls/openssl/tls_udp.c
+@@ -165,7 +165,7 @@ static BIO_METHOD *bio_method_udp(void)
+ {
+ 	BIO_METHOD *method;
+ 
+-	method = BIO_meth_new(BIO_TYPE_SOURCE_SINK, "udp_send");
++	method = BIO_meth_new(BIO_TYPE_SOURCE_SINK, "re_udp_send");
+ 	if (!method) {
+ 		DEBUG_WARNING("alloc: BIO_meth_new() failed\n");
+ 		ERR_clear_error();
+@@ -184,7 +184,7 @@ static BIO_METHOD *bio_method_udp(void)
+ 
+ static struct bio_method_st bio_udp_send = {
+ 	BIO_TYPE_SOURCE_SINK,
+-	"udp_send",
++	"re_udp_send",
+ 	bio_write,
+ 	0,
+ 	0,
+diff --git a/src/turn/turnc.c b/src/turn/turnc.c
+index b103dba..f3cfbd5 100644
+--- a/src/turn/turnc.c
++++ b/src/turn/turnc.c
+@@ -531,7 +531,7 @@ int turnc_send(struct turnc *turnc, const struct sa *dst, struct mbuf *mb)
+ 	switch (turnc->proto) {
+ 
+ 	case IPPROTO_UDP:
+-		err = udp_send(turnc->sock, &turnc->srv, mb);
++		err = re_udp_send(turnc->sock, &turnc->srv, mb);
+ 		break;
+ 
+ 	case IPPROTO_TCP:
+diff --git a/src/udp/udp.c b/src/udp/udp.c
+index f6312ab..631b227 100644
+--- a/src/udp/udp.c
++++ b/src/udp/udp.c
+@@ -400,7 +400,7 @@ int udp_listen(struct udp_sock **usp, const struct sa *local,
+  *
+  * @return 0 if success, otherwise errorcode
+  */
+-int udp_connect(struct udp_sock *us, const struct sa *peer)
++int re_udp_connect(struct udp_sock *us, const struct sa *peer)
+ {
+ 	int fd;
+ 
+@@ -474,7 +474,7 @@ static int udp_send_internal(struct udp_sock *us, const struct sa *dst,
+  *
+  * @return 0 if success, otherwise errorcode
+  */
+-int udp_send(struct udp_sock *us, const struct sa *dst, struct mbuf *mb)
++int re_udp_send(struct udp_sock *us, const struct sa *dst, struct mbuf *mb)
+ {
+ 	if (!us || !dst || !mb)
+ 		return EINVAL;
+-- 
+2.7.4
+

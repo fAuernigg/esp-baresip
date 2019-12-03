@@ -1,0 +1,50 @@
+From 8d2c27ca85b4f0110490635186e67bda48a9a77a Mon Sep 17 00:00:00 2001
+From: Christian Spielberger <c.spielberger@commend.com>
+Date: Sun, 15 Sep 2019 14:38:10 +0200
+Subject: [PATCH 5/6] conf: add function conf_set
+
+---
+ include/re_conf.h |  1 +
+ src/conf/conf.c   | 17 +++++++++++++++++
+ 2 files changed, 18 insertions(+)
+
+diff --git a/include/re_conf.h b/include/re_conf.h
+index 8c5d008..08277a5 100644
+--- a/include/re_conf.h
++++ b/include/re_conf.h
+@@ -18,3 +18,4 @@ int conf_get_u32(const struct conf *conf, const char *name, uint32_t *num);
+ int conf_get_bool(const struct conf *conf, const char *name, bool *val);
+ int conf_apply(const struct conf *conf, const char *name,
+ 	       conf_h *ch, void *arg);
++int conf_set(struct conf *conf, const char *name, const char *value);
+diff --git a/src/conf/conf.c b/src/conf/conf.c
+index 6c800a8..09e23e9 100644
+--- a/src/conf/conf.c
++++ b/src/conf/conf.c
+@@ -166,6 +166,23 @@ int conf_get(const struct conf *conf, const char *name, struct pl *pl)
+ }
+ 
+ 
++int conf_set(struct conf *conf, const char *name, const char *value)
++{
++	if (!conf || !name)
++		return EINVAL;
++
++	mbuf_write_str(conf->mb, name);
++
++	if (value) {
++		mbuf_write_u8(conf->mb, ' ');
++		mbuf_write_str(conf->mb, value);
++	}
++
++	mbuf_write_u8(conf->mb, '\n');
++	return 0;
++}
++
++
+ /**
+  * Get the value of a configuration item string
+  *
+-- 
+2.7.4
+
