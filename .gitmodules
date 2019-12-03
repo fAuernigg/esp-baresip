@@ -4,3 +4,6 @@
 [submodule "components/rem/rem"]
 	path = components/rem/rem
 	url = https://github.com/creytiv/rem.git
+[submodule "components/baresip/baresip"]
+	path = components/baresip/baresip
+	url = https://github.com/alfredh/baresip.git
