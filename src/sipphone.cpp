@@ -16,13 +16,13 @@
 typedef uint32_t u32_t;
 #include "cJSON.h"
 #include "esp_log.h"
-#include "version.h"
+
+#define VERSION"v0.5"
+//#include "version.h"
 
 //#include <net/if.h>
 #include <re.h>
 #include <baresip.h>
-
-#include "arduino_net.h"
 
 
 static TaskHandle_t baresip_thread;
@@ -141,13 +141,19 @@ int extern_baresip_config(struct conf *conf)
 
 #define STACK_SIZE 16*1024
 
-int sipPhoneInit()
+TypeGetNetworkAddress gCbGetNetworkAddress = NULL;
+
+int sipPhoneInit(TypeGetNetworkAddress cbGetNetworkAddress)
 {
+	gCbGetNetworkAddress = cbGetNetworkAddress;
+
 	char versionBuffer[32];
 	bool udp = true, tcp = false, tls = false;
 	int err = 0;
 	struct mbuf *mb;
-	String ip = ard_local_ip().toString();
+	char local_ip[128]={0}, gw[128]={0};
+	if (gCbGetNetworkAddress)
+		gCbGetNetworkAddress(local_ip, sizeof(local_ip), gw, sizeof(gw));
 
 	ESP_LOGI(TAG, "Starting Baresip");
 
@@ -206,7 +212,7 @@ int sipPhoneInit()
 
 	mb = mbuf_alloc(100);
 	mbuf_printf(mb, "\"" UA_DISPLAY_NAME "\" "
-			"<sip:%s@%s>;auth_pass=none;regint=0;answermode=auto", UA_USER, ip.c_str());
+			"<sip:%s@%s>;auth_pass=none;regint=0;answermode=auto", UA_USER, local_ip);
 	mbuf_write_u8(mb, 0);
 	mbuf_set_pos(mb, 0);
 	ua_alloc(NULL, (char *) mbuf_buf(mb));
@@ -261,8 +267,10 @@ int net_rt_list(net_rt_h *rth, void *arg) {
 
 	sa_init(&dst, AF_INET);
 
-	String ip = ard_gateway().toString();
-	sa_set_str(&gw, ip.c_str(), 0);
+	char local_ip[128]={0}, gw_ip[128]={0};
+	if (gCbGetNetworkAddress)
+		gCbGetNetworkAddress(local_ip, sizeof(local_ip), gw_ip, sizeof(gw_ip));
+	sa_set_str(&gw, gw_ip, 0);
 
 	rth("wifi", &dst, 24, &gw, arg);
 	return 0;
@@ -271,9 +279,12 @@ int net_rt_list(net_rt_h *rth, void *arg) {
 int net_if_getaddr4(const char *ifname, int af, struct sa *ip)
 {
 	int err;
-	String s = ard_local_ip().toString();
-	ESP_LOGI(TAG, "ard_local_ip = %s", s.c_str());
-	err = sa_set_str(ip, s.c_str(), 0);
+
+	char local_ip[128]={0}, gw_ip[128]={0};
+	if (gCbGetNetworkAddress)
+		gCbGetNetworkAddress(local_ip, sizeof(local_ip), gw_ip, sizeof(gw_ip));
+	ESP_LOGI(TAG, "ard_local_ip = %s", local_ip);
+	err = sa_set_str(ip, local_ip, 0);
 	if (err)
 		ESP_LOGW(TAG, "%s No valid local ip address\n", __FUNCTION__);
 
@@ -287,9 +298,11 @@ int net_if_list(net_ifaddr_h *ifh, void *arg)
 	if (!ifh)
 		return EINVAL;
 
-	String ip = ard_local_ip().toString();
-	ESP_LOGI(TAG, "ard_local_ip = %s", ip.c_str());
-	err = sa_set_str(&sa, ip.c_str(), 0);
+	char local_ip[128]={0}, gw_ip[128]={0};
+	if (gCbGetNetworkAddress)
+		gCbGetNetworkAddress(local_ip, sizeof(local_ip), gw_ip, sizeof(gw_ip));
+	ESP_LOGI(TAG, "ard_local_ip = %s", local_ip);
+	err = sa_set_str(&sa, local_ip, 0);
 	if (err) {
 		ESP_LOGW(TAG, "%s No valid local ip address\n", __FUNCTION__);
 		return err;
@@ -312,8 +325,10 @@ int net_if_getaddr_for(const struct pl *dest, struct sa *localip, bool isip)
 		return EINVAL;
 	}
 
-	String ip = ard_local_ip().toString();
-	err = sa_set_str(localip, ip.c_str(), 0);
+	char local_ip[128]={0}, gw_ip[128]={0};
+	if (gCbGetNetworkAddress)
+		gCbGetNetworkAddress(local_ip, sizeof(local_ip), gw_ip, sizeof(gw_ip));
+	err = sa_set_str(localip, local_ip, 0);
 	if (err)
 		ESP_LOGW(TAG, "%s No valid local ip address\n", __FUNCTION__);
 
@@ -428,7 +443,8 @@ void sipHandleCommand(PubSubClient* mqttClient, String mqtt_id, String msg)
 extern "C" {
 #endif
 
-int sipPhoneInit() {
+int sipPhoneInit(TypeGetNetworkAddress cbGetNetworkAddress)
+{
 	return true;
 }
 

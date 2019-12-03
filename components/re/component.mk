@@ -1,5 +1,5 @@
 
-COMPONENT_ADD_INCLUDEDIRS := re/include
+COMPONENT_ADD_INCLUDEDIRS := ./re/include
 
 COMPONENT_SRCDIRS = \
 ./re/src  \

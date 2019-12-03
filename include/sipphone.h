@@ -12,7 +12,10 @@ extern "C"
 
 #define ENABLE_baresip 1
 
-int sipPhoneInit();
+typedef void (*TypeGetNetworkAddress) (char *local_ip, size_t maxLen,
+										char *gw, size_t maxLenGw);
+
+int sipPhoneInit(TypeGetNetworkAddress gCbGetNetworkAddress);
 
 void sipHandleCommand(PubSubClient* mqttClient, String mqtt_id, String msg);
 
