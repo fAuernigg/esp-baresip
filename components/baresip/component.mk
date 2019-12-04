@@ -1,13 +1,13 @@
 
-COMPONENT_ADD_INCLUDEDIRS := baresip/include
+COMPONENT_ADD_INCLUDEDIRS := ../baresip/include
 
 COMPONENT_SRCDIRS = \
-	baresip/src \
-	baresip/modules/g711 \
-	baresip/modules/i2s \
-	baresip/modules/stdio \
-	baresip/modules/menu \
-	.
+baresip/src \
+baresip/modules/g711 \
+baresip/modules/i2s \
+baresip/modules/stdio \
+baresip/modules/menu \
+.
 
 CFLAGS	+= -DHAVE_SELECT -DHAVE_SELECT_H
 CFLAGS	+= -DHAVE_INET_NTOP -DHAVE_INET_PTON -DHAVE_PTHREAD -DHAVE_STRERROR_R

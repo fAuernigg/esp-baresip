@@ -1,0 +1,65 @@
+From 389f278e870cc28df690ff1551817978af55801a Mon Sep 17 00:00:00 2001
+From: Christian Spielberger <c.spielberger@commend.com>
+Date: Sun, 15 Sep 2019 14:37:24 +0200
+Subject: [PATCH 2/3] conf: add EXTCONFIG pre proc switch
+
+---
+ include/baresip.h | 1 -
+ src/conf.c        | 8 +++++++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/include/baresip.h b/include/baresip.h
+index f8f827d..8098144 100644
+--- a/include/baresip.h
++++ b/include/baresip.h
+@@ -314,7 +314,6 @@ int config_print(struct re_printf *pf, const struct config *cfg);
+ int config_write_template(const char *file, const struct config *cfg);
+ struct config *conf_config(void);
+ 
+-
+ /*
+  * Contact
+  */
+diff --git a/src/conf.c b/src/conf.c
+index bfe59ba..dced84d 100644
+--- a/src/conf.c
++++ b/src/conf.c
+@@ -40,7 +40,7 @@
+ 
+ 
+ static const char *conf_path = NULL;
+-static struct conf *conf_obj;
++static struct conf *conf_obj = NULL;
+ 
+ 
+ /**
+@@ -332,13 +332,18 @@ int conf_get_float(const struct conf *conf, const char *name, double *val)
+  */
+ int conf_configure(void)
+ {
++#ifndef EXTCONFIG
+ 	char path[FS_PATH_MAX], file[FS_PATH_MAX];
++#else
++	char *file = NULL;
++#endif
+ 	int err;
+ 
+ #if defined (WIN32)
+ 	dbg_init(DBG_INFO, DBG_NONE);
+ #endif
+ 
++#ifndef EXTCONFIG
+ 	err = conf_path_get(path, sizeof(path));
+ 	if (err) {
+ 		warning("conf: could not get config path: %m\n", err);
+@@ -356,6 +361,7 @@ int conf_configure(void)
+ 		if (err)
+ 			goto out;
+ 	}
++#endif
+ 
+ 	conf_obj = mem_deref(conf_obj);
+ 	err = conf_alloc(&conf_obj, file);
+-- 
+2.7.4
+

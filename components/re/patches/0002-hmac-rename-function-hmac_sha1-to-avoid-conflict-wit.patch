@@ -1,0 +1,77 @@
+From 68ce332c5ffa7ebc679dd90ad1b44065af8a95d4 Mon Sep 17 00:00:00 2001
+From: Christian Spielberger <c.spielberger@commend.com>
+Date: Sun, 8 Sep 2019 11:06:59 +0200
+Subject: [PATCH 2/6] hmac: rename function hmac_sha1 to avoid conflict with
+ wpa-supplicant
+
+---
+ include/re_hmac.h    | 2 +-
+ src/hmac/hmac.c      | 2 +-
+ src/hmac/hmac_sha1.c | 2 +-
+ src/stun/msg.c       | 4 ++--
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/include/re_hmac.h b/include/re_hmac.h
+index 25e7e2e..efb1887 100644
+--- a/include/re_hmac.h
++++ b/include/re_hmac.h
+@@ -5,7 +5,7 @@
+  */
+ 
+ 
+-void hmac_sha1(const uint8_t *k,   /* secret key */
++void re_hmac_sha1(const uint8_t *k,   /* secret key */
+ 	       size_t         lk,  /* length of the key in bytes */
+ 	       const uint8_t *d,   /* data */
+ 	       size_t         ld,  /* length of data in bytes */
+diff --git a/src/hmac/hmac.c b/src/hmac/hmac.c
+index ce89aad..f19aa0b 100644
+--- a/src/hmac/hmac.c
++++ b/src/hmac/hmac.c
+@@ -57,7 +57,7 @@ int hmac_digest(struct hmac *hmac, uint8_t *md, size_t md_len,
+ 	if (!hmac || !md || !md_len || !data || !data_len)
+ 		return EINVAL;
+ 
+-	hmac_sha1(hmac->key, hmac->key_len, data, data_len, md, md_len);
++	re_hmac_sha1(hmac->key, hmac->key_len, data, data_len, md, md_len);
+ 
+ 	return 0;
+ }
+diff --git a/src/hmac/hmac_sha1.c b/src/hmac/hmac_sha1.c
+index 1fdf0c5..8c10d59 100644
+--- a/src/hmac/hmac_sha1.c
++++ b/src/hmac/hmac_sha1.c
+@@ -31,7 +31,7 @@
+  * @param out Digest output
+  * @param t   Size of digest output
+  */
+-void hmac_sha1(const uint8_t *k,  /* secret key */
++void re_hmac_sha1(const uint8_t *k,  /* secret key */
+ 	       size_t   lk,       /* length of the key in bytes */
+ 	       const uint8_t *d,  /* data */
+ 	       size_t   ld,       /* length of data in bytes */
+diff --git a/src/stun/msg.c b/src/stun/msg.c
+index dda3d8d..bbbf6f7 100644
+--- a/src/stun/msg.c
++++ b/src/stun/msg.c
+@@ -313,7 +313,7 @@ int stun_msg_vencode(struct mbuf *mb, uint16_t method, uint8_t class,
+ 		uint8_t mi[20];
+ 
+ 		mb->pos = start;
+-		hmac_sha1(key, keylen, mbuf_buf(mb), mbuf_get_left(mb),
++		re_hmac_sha1(key, keylen, mbuf_buf(mb), mbuf_get_left(mb),
+ 			  mi, sizeof(mi));
+ 
+ 		mb->pos += STUN_HEADER_SIZE + hdr.len - MI_SIZE;
+@@ -407,7 +407,7 @@ int stun_msg_chk_mi(const struct stun_msg *msg, const uint8_t *key,
+ 		msg->mb->pos -= STUN_HEADER_SIZE;
+ 	}
+ 
+-	hmac_sha1(key, keylen, mbuf_buf(msg->mb),
++	re_hmac_sha1(key, keylen, mbuf_buf(msg->mb),
+ 		  STUN_HEADER_SIZE + msg->hdr.len - MI_SIZE,
+ 		  hmac, sizeof(hmac));
+ 
+-- 
+2.7.4
+

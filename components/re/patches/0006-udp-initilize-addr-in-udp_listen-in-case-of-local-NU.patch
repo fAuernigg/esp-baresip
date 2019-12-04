@@ -1,0 +1,26 @@
+From eb65a4d93bb42c98df7a205ce0ea8cd25ae42d51 Mon Sep 17 00:00:00 2001
+From: Christian Spielberger <c.spielberger@commend.com>
+Date: Mon, 16 Sep 2019 13:50:44 +0200
+Subject: [PATCH 6/6] udp: initilize addr in udp_listen in case of local ==
+ NULL
+
+---
+ src/udp/udp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/udp/udp.c b/src/udp/udp.c
+index 631b227..7a73a3e 100644
+--- a/src/udp/udp.c
++++ b/src/udp/udp.c
+@@ -258,7 +258,7 @@ int udp_listen(struct udp_sock **usp, const struct sa *local,
+ {
+ 	struct addrinfo hints, *res = NULL, *r;
+ 	struct udp_sock *us = NULL;
+-	char addr[64];
++	char addr[64] = "";
+ 	char serv[6] = "0";
+ 	int af, error, err = 0;
+ 
+-- 
+2.7.4
+

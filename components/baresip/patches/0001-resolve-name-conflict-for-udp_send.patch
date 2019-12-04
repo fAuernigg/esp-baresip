@@ -1,0 +1,108 @@
+From 6c83acdab683014560209d7310fefc0612fffe2e Mon Sep 17 00:00:00 2001
+From: Christian Spielberger <c.spielberger@commend.com>
+Date: Sun, 15 Sep 2019 10:29:04 +0200
+Subject: [PATCH 1/3] resolve name conflict for udp_send
+
+---
+ modules/cons/cons.c         | 6 +++---
+ modules/ctrl_tcp/ctrl_tcp.c | 2 +-
+ modules/natpmp/libnatpmp.c  | 4 ++--
+ modules/zrtp/zrtp.c         | 2 +-
+ test/mock/dnssrv.c          | 2 +-
+ 5 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/modules/cons/cons.c b/modules/cons/cons.c
+index 138619b..aab6134 100644
+--- a/modules/cons/cons.c
++++ b/modules/cons/cons.c
+@@ -72,7 +72,7 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
+ 
+ 	if (mbr->end > 0) {
+ 		mbr->pos = 0;
+-		(void)udp_send(st->us, src, mbr);
++		(void)re_udp_send(st->us, src, mbr);
+ 	}
+ 
+ 	mem_deref(mbr);
+@@ -139,7 +139,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
+ 
+ 	/* only one connection allowed */
+ 	st->tc = mem_deref(st->tc);
+-	(void)tcp_accept(&st->tc, st->ts, NULL, tcp_recv_handler,
++	(void)re_tcp_accept(&st->tc, st->ts, NULL, tcp_recv_handler,
+ 			 tcp_close_handler, st);
+ }
+ 
+@@ -198,7 +198,7 @@ static int output_handler(const char *str)
+ 
+ 	if (sa_isset(&cons->udp_peer, SA_ALL)) {
+ 		mb->pos = 0;
+-		err |= udp_send(cons->us, &cons->udp_peer, mb);
++		err |= re_udp_send(cons->us, &cons->udp_peer, mb);
+ 	}
+ 
+ 	if (cons->tc) {
+diff --git a/modules/ctrl_tcp/ctrl_tcp.c b/modules/ctrl_tcp/ctrl_tcp.c
+index 99757ad..67da4aa 100644
+--- a/modules/ctrl_tcp/ctrl_tcp.c
++++ b/modules/ctrl_tcp/ctrl_tcp.c
+@@ -249,7 +249,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
+ 	st->tc = mem_deref(st->tc);
+ 	st->ns = mem_deref(st->ns);
+ 
+-	(void)tcp_accept(&st->tc, st->ts, NULL, NULL, tcp_close_handler, st);
++	(void)re_tcp_accept(&st->tc, st->ts, NULL, NULL, tcp_close_handler, st);
+ 	(void)netstring_insert(&st->ns, st->tc, 0, command_handler, st);
+ }
+ 
+diff --git a/modules/natpmp/libnatpmp.c b/modules/natpmp/libnatpmp.c
+index 7969007..7c150f3 100644
+--- a/modules/natpmp/libnatpmp.c
++++ b/modules/natpmp/libnatpmp.c
+@@ -78,7 +78,7 @@ static void timeout(void *arg)
+ 	np->n++;
+ 
+ 	np->mb->pos = 0;
+-	err = udp_send(np->us, &np->srv, np->mb);
++	err = re_udp_send(np->us, &np->srv, np->mb);
+ 	if (err) {
+ 		completed(np, err, NULL);
+ 	}
+@@ -150,7 +150,7 @@ static int natpmp_init(struct natpmp_req *np, const struct sa *srv,
+ 	np->resph = resph;
+ 	np->arg   = arg;
+ 
+-	udp_connect(np->us, srv);
++	re_udp_connect(np->us, srv);
+ 
+ 	np->mb = mbuf_alloc(512);
+ 	if (!np->mb)
+diff --git a/modules/zrtp/zrtp.c b/modules/zrtp/zrtp.c
+index bd6e458..bf6fdb0 100644
+--- a/modules/zrtp/zrtp.c
++++ b/modules/zrtp/zrtp.c
+@@ -448,7 +448,7 @@ static int on_send_packet(const zrtp_stream_t *stream,
+ 
+ 	err = udp_send_helper(st->rtpsock, &st->raddr, mb, st->uh_rtp);
+ 	if (err) {
+-		warning("zrtp: udp_send %u bytes (%m)\n",
++		warning("zrtp: re_udp_send %u bytes (%m)\n",
+ 			rtp_packet_length, err);
+ 	}
+ 
+diff --git a/test/mock/dnssrv.c b/test/mock/dnssrv.c
+index e5ac188..ceadd86 100644
+--- a/test/mock/dnssrv.c
++++ b/test/mock/dnssrv.c
+@@ -113,7 +113,7 @@ static void decode_dns_query(struct dns_server *srv,
+ 
+ 	mb->pos = start;
+ 
+-	(void)udp_send(srv->us, src, mb);
++	(void)re_udp_send(srv->us, src, mb);
+ 
+  out:
+ 	list_clear(&rrl);
+-- 
+2.7.4
+

@@ -1,21 +1,21 @@
 
-COMPONENT_ADD_INCLUDEDIRS := ./rem/include
+COMPONENT_ADD_INCLUDEDIRS := rem/include
 
 COMPONENT_SRCDIRS = \
-	./rem/src/fir \
-	./rem/src/au \
-	./rem/src/goertzel \
-	./rem/src/dtmf \
-	./rem/src/auresamp \
-	./rem/src/aac \
-	./rem/src/aumix \
-	./rem/src/g711 \
-	./rem/src/auconv \
-	./rem/src/aubuf \
-	./rem/src/aufile \
-	./rem/src/autone \
-	./rem/src/vid \
-	./rem/src/vidconv \
+	rem/src/fir \
+	rem/src/au \
+	rem/src/goertzel \
+	rem/src/dtmf \
+	rem/src/auresamp \
+	rem/src/aac \
+	rem/src/aumix \
+	rem/src/g711 \
+	rem/src/auconv \
+	rem/src/aubuf \
+	rem/src/aufile \
+	rem/src/autone \
+	rem/src/vid \
+	rem/src/vidconv \
 
 CFLAGS	+= -DHAVE_SELECT -DHAVE_SELECT_H
 CFLAGS	+= -DHAVE_INET_NTOP -DHAVE_INET_PTON -DHAVE_PTHREAD -DHAVE_STRERROR_R
