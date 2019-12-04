@@ -1,6 +1,6 @@
-#define TAG "sipphone"
+#define TAG "esp-baresip"
 
-#include "sipphone.h"
+#include "esp-baresip.h"
 
 #ifdef ENABLE_baresip
 
