@@ -1,16 +1,20 @@
 #!/bin/bash
 
+
 function apply() {
-	cpath=$(pwd)
 	cd $2
 	shopt -s globstar
-	for file in $cpath/$1/*.patch
+	for file in $1/*.patch
 	do
 		patch -p1 -i "$file"
 	done
-	cd $cpath
 }
 
+cd $(dirname $0)
+spath=$(pwd)
 
-apply "baresip/patches" "baresip/baresip"
-apply "re/patches" "re/re"
+echo "applying baresip patches ..."
+apply "$spath/baresip/patches" "$spath/baresip/baresip"
+
+echo "applying libre patches ..."
+apply "$spath/re/patches" "$spath/re/re"
