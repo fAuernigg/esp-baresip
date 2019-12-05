@@ -1,11 +1,12 @@
 #define TAG "esp-baresip"
 
 #include "esp-baresip.h"
+#include "sdkconfig.h"
 
 #ifdef ENABLE_baresip
 
 #ifndef UA_DISPLAY_NAME
-#define UA_DISPLAY_NAME "FedEx esp32"
+#define UA_DISPLAY_NAME "esp-baresip"
 #endif
 
 #ifndef UA_USER
@@ -140,8 +141,6 @@ int extern_baresip_config(struct conf *conf)
 }
 
 
-#define STACK_SIZE 16*1024
-
 TypeGetNetworkAddress gCbGetNetworkAddress = NULL;
 
 int sipPhoneInit(TypeGetNetworkAddress cbGetNetworkAddress)
@@ -219,8 +218,8 @@ int sipPhoneInit(TypeGetNetworkAddress cbGetNetworkAddress)
 	ua_alloc(NULL, (char *) mbuf_buf(mb));
 	mem_deref(mb);
 
-	info("%s stack size = %ld", __func__, STACK_SIZE);
-	xTaskCreate(baresip_main, "baresipmain", STACK_SIZE, NULL, 10, &baresip_thread);
+	info("%s stack size = %ld", __func__, CONFIG_BARESIPTHREAD_STACKSIZE);
+	xTaskCreate(baresip_main, "baresipmain", CONFIG_BARESIPTHREAD_STACKSIZE, NULL, 10, &baresip_thread);
 
 	ESP_LOGI(TAG, "Baresip initialization done");
 
