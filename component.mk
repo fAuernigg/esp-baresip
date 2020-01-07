@@ -37,11 +37,10 @@ CFLAGS	+= -Wall
 CFLAGS	+= -Wmissing-declarations
 CFLAGS	+= -Wmissing-prototypes
 CFLAGS	+= -Wbad-function-cast
-CFLAGS	+= -Wsign-compare
 CFLAGS	+= -Wnested-externs
 CFLAGS	+= -Wshadow
 CFLAGS	+= -Waggregate-return
-CFLAGS  += -DLINUX -g -std=c99
+CFLAGS  += -DLINUX -g 
 CFLAGS  += -Os
 
 
@@ -111,11 +110,10 @@ CFLAGS	+= -Wall
 CFLAGS	+= -Wmissing-declarations
 CFLAGS	+= -Wmissing-prototypes
 CFLAGS	+= -Wbad-function-cast
-CFLAGS	+= -Wsign-compare
 CFLAGS	+= -Wnested-externs
 CFLAGS	+= -Wshadow
 CFLAGS	+= -Waggregate-return
-CFLAGS  += -DLINUX -g -std=c99
+CFLAGS  += -DLINUX -g 
 CFLAGS  += -Os
 CFLAGS  += -Wno-error=char-subscripts
 CFLAGS 	+= -Wno-error=implicit-function-declaration
@@ -155,11 +153,10 @@ CFLAGS	+= -Wall
 CFLAGS	+= -Wmissing-declarations
 CFLAGS	+= -Wmissing-prototypes
 CFLAGS	+= -Wbad-function-cast
-CFLAGS	+= -Wsign-compare
 CFLAGS	+= -Wnested-externs
 CFLAGS	+= -Wshadow
 CFLAGS	+= -Waggregate-return
-CFLAGS  += -DLINUX -g -std=c99
+CFLAGS  += -DLINUX -g 
 CFLAGS  += -Os
 CFLAGS	+= -Wno-char-subscripts
 
